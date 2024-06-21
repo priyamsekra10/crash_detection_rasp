@@ -10,6 +10,50 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from signal import signal, SIGPIPE, SIG_DFL
 import datetime
+import boto3
+from tqdm import tqdm
+import threading
+import os
+from dotenv import load_dotenv
+
+
+
+load_dotenv()
+
+# Access the environment variables
+ACCESS_KEY_ID = os.getenv('ACCESS_KEY_ID')
+SECRET_ACCESS_KEY = os.getenv('SECRET_ACCESS_KEY')
+
+s3_client = boto3.client(
+    's3',
+    aws_access_key_id=ACCESS_KEY_ID,
+    aws_secret_access_key=SECRET_ACCESS_KEY
+)
+# Initialize the S3 client
+bucket_name = 'resq'  # replace with your actual bucket name
+
+class ProgressPercentage(object):
+    def __init__(self, filename):
+        self._filename = filename
+        self._size = float(s3_client.head_object(Bucket=bucket_name, Key=filename)['ContentLength'])
+        self._seen_so_far = 0
+        self._lock = threading.Lock()
+        
+    def __call__(self, bytes_amount):
+        with self._lock:
+            self._seen_so_far += bytes_amount
+            percentage = (self._seen_so_far / self._size) * 100
+            tqdm.write(f"{self._filename}  {self._seen_so_far}/{self._size}  ({percentage:.2f}%)")
+
+def download_model_from_s3(model_key, local_path):
+    # Using tqdm to display the progress bar
+    with tqdm(total=int(s3_client.head_object(Bucket=bucket_name, Key=model_key)['ContentLength']), unit='B', unit_scale=True, desc=model_key) as pbar:
+        s3_client.download_file(bucket_name, model_key, local_path, Callback=lambda bytes_transferred: pbar.update(bytes_transferred))
+
+# Download the ONNX models from S3 and store the paths in variables
+a = "car.h5"
+download_model_from_s3("road_camera_models/car.h5", a)
+
 
 # Constants
 frame_interval = 0.1

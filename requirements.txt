@@ -6,3 +6,6 @@ pymongo
 pyfcm==2.0.2
 numpy
 tqdm
+boto3
+tqdm
+python-dotenv
