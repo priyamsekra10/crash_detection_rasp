@@ -1,0 +1,8 @@
+opencv-python
+tensorflow
+pandas
+tensorflow-hub
+pymongo
+pyfcm==2.0.2
+numpy
+tqdm
